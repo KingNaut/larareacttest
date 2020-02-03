@@ -1,0 +1,116 @@
+version: '3'
+services:
+  #container: app(PHP Service) sinh ra từ image digitalocean.com/php
+  app:
+    build:
+      # nạp Dockerfile tại thu mục cùng cấp
+      context: .
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    #    container_name: app
+    #dịch vụ host bị dừng thỳ docker sẽ tự động khởi động lại
+    restart: always
+    #    tty: true
+    depends_on:
+      - mariadb
+    #khởi tạo biết môi trường
+    #    environment:
+    #      SERVICE_NAME: app
+    #      SERVICE_TAGS: dev
+    working_dir: /var/www
+    #gán vào các ổ đĩa
+    volumes:
+      - ./:/var/www
+    #      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    # kết nối network app-network
+    networks:
+      - app-network
+
+  #container : phpmyadmin sinh ra từ image phpmyadmin/phpmyadmin version latest
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+    #    restart: always
+    # khi kết nối với container tại cổng 8899 trên mát host thì sẽ ảnh xạ đến cổng 80 của container
+    ports:
+      - 8899:80
+    volumes:
+      - "./mariadb_config/php_size.ini:/usr/local/etc/php/conf.d/php_size.ini"
+    depends_on:
+      - mariadb
+    networks:
+      - app-network
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    restart: always
+    #    tty: true
+    # các cổng listen của  Nginx tại cổng 80 và 443
+    ports:
+      - "8080:80"
+    #      - "443:443"
+    depends_on:
+      - app
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+  #  #MySQL Service
+  #  db:
+  #    image: mysql:5.7.27
+  #    container_name: db
+  #    restart: always
+  #    tty: true
+  #    ports:
+  #      - "3307:3306"
+  #    environment:
+  #      MYSQL_DATABASE: appotapay-admin-oauth
+  #      MYSQL_ROOT_PASSWORD: Tuan1908!
+  #      MYSQL_USER: tuannm
+  #      MYSQL_PASSWORD: Tuan1908!
+  #      SERVICE_TAGS: dev
+  #      SERVICE_NAME: mysql
+  #    volumes:
+  #      - dbdata:/var/lib/mysql/
+  ##      - ./mysql/my.cnf:../mysql/my.cnf
+  #    networks:
+  #      - app-network
+
+  #MariaDb
+  mariadb:
+    #image bitnami/mariadb version latest
+    image: 'bitnami/mariadb:latest'
+    #container  db sinh ra từ image bitnami/mariadb
+    #    container_name: db
+    restart: always
+    #    tty: true
+    environment:
+      #      - ALLOW_EMPTY_PASSWORD=yes                #cho phép tạo mật khẩu rỗng
+      - MARIADB_DATABASE=dev_api_lichnhuy_vn  #Name database
+      - MARIADB_ROOT_PASSWORD=Tuan1908!         #mật khẩu root
+      - MARIADB_USER=tuannm                     # create user : tuannm
+      #      - MARIADB_HOST=172.25.0.1             #host truy nhập mariadb
+      - MARIADB_PASSWORD=Tuan1908!              # create pasword user tuannm
+    #      - SERVICE_TAGS=dev                        # Tag container : dev
+    #      - SERVICE_NAME=mariadb
+    ports:
+      - '3307:3306'
+    #    volumes:
+    #        - /path/to/my_custom.cnf:/opt/bitnami/mariadb/conf/my_custom.cnf:ro
+    #        - /path/to/mariadb-persistence:/bitnami/mariadb
+    networks:
+      - app-network
+
+#Docker Networks , network chung cho các container cùng kết nối!
+networks:
+  app-network:
+#Volumes : tạo ổ đĩa lưu trữ local trên docker để các container lưu trữ dữ liệu!
+volumes:
+  dbdata:
+    driver: local

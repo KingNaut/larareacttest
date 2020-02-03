@@ -1,0 +1,16 @@
+/vendor/
+.idea
+src/vendor
+src/.idea
+src/Homestead.json
+src/Homestead.yaml
+src/.env
+src/node_modules
+ls
+docker-compose.yml
+src/Dockerfile
+src/mysql/
+src/nginx/
+src/php/
+.DS_Store
+mariadb_config
